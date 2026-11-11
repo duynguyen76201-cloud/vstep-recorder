@@ -1,526 +1,375 @@
 
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>VSTEP Speaking Recorder</title>
-
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      padding: 24px;
-      min-height: 100vh;
-      font-family: Arial, sans-serif;
-      background: #f3f5f9;
-      color: #202938;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 650px;
-      background: white;
-      border-radius: 18px;
-      padding: 32px;
-      box-shadow: 0 8px 30px rgba(0,0,0,.08);
-    }
-
-    .header {
-      text-align: center;
-      margin-bottom: 28px;
-    }
-
-    .header h1 {
-      margin: 0 0 8px;
-      font-size: 25px;
-      color: #243b64;
-    }
-
-    .header p {
-      margin: 0;
-      color: #788397;
-      font-size: 14px;
-    }
-
-    .part {
-      display: inline-block;
-      background: #eaf1ff;
-      color: #2457a7;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-weight: bold;
-      margin-bottom: 18px;
-    }
-
-    .question {
-      background: #f7f9fc;
-      border: 1px solid #e5eaf2;
-      padding: 20px;
-      border-radius: 12px;
-      line-height: 1.7;
-      min-height: 90px;
-      margin-bottom: 24px;
-      white-space: pre-wrap;
-    }
-
-    .timer-box {
-      text-align: center;
-      margin: 25px 0;
-    }
-
-    .timer {
-      font-size: 58px;
-      font-weight: bold;
-      color: #243b64;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .timer-label {
-      color: #788397;
-      margin-top: 8px;
-      font-size: 14px;
-    }
-
-    .status {
-      text-align: center;
-      padding: 12px;
-      border-radius: 9px;
-      background: #f0f3f8;
-      color: #536176;
-      font-size: 14px;
-      margin: 20px 0;
-      line-height: 1.5;
-    }
-
-    .status.recording {
-      background: #fff0f0;
-      color: #d93636;
-    }
-
-    .status.success {
-      background: #eaf8ef;
-      color: #20834a;
-    }
-
-    .status.error {
-      background: #fff0f0;
-      color: #c62828;
-    }
-
-    .controls {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    button {
-      border: none;
-      border-radius: 10px;
-      padding: 14px 25px;
-      font-size: 15px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: .2s;
-    }
-
-    button:disabled {
-      opacity: .5;
-      cursor: not-allowed;
-    }
-
-    .start-btn {
-      background: #2457a7;
-      color: white;
-    }
-
-    .start-btn:hover:not(:disabled) {
-      background: #194582;
-    }
-
-    .stop-btn {
-      background: #d93636;
-      color: white;
-    }
-
-    .note {
-      margin-top: 25px;
-      color: #8993a3;
-      font-size: 12px;
-      line-height: 1.6;
-      text-align: center;
-    }
-
-    @media (max-width: 500px) {
-      body {
-        padding: 12px;
-      }
-
-      .container {
-        padding: 22px 16px;
-      }
-
-      .timer {
-        font-size: 48px;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VSTEP Speaking Recorder</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
+    font-family: Arial, sans-serif;
+    background: #f3f6fb;
+    color: #1f2937;
+  }
+  .container {
+    max-width: 760px;
+    margin: 25px auto;
+    background: white;
+    padding: 26px;
+    border-radius: 16px;
+    box-shadow: 0 5px 25px rgba(0,0,0,.06);
+  }
+  h1 { color: #17365d; font-size: 25px; }
+  .label { color: #2563eb; font-weight: bold; }
+  .question {
+    background: #f7f9fc;
+    border-left: 4px solid #2563eb;
+    padding: 15px;
+    margin: 12px 0;
+    border-radius: 7px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+  .timer {
+    font-size: 46px;
+    font-weight: bold;
+    color: #17365d;
+    margin: 18px 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .warning { color: #dc2626; }
+  .status {
+    padding: 14px;
+    border-radius: 9px;
+    background: #f1f5f9;
+    margin: 18px 0;
+    line-height: 1.5;
+  }
+  button {
+    border: 0;
+    border-radius: 9px;
+    padding: 14px 20px;
+    background: #2563eb;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .hidden { display: none; }
+  .error { color: #dc2626; }
+  .success { color: #16845b; }
+  @media(max-width: 600px) {
+    body { padding: 10px; }
+    .container { padding: 18px; }
+  }
+</style>
 </head>
-
 <body>
-  <div class="container">
+<div class="container">
+  <div class="label" id="partLabel">VSTEP SPEAKING</div>
+  <h1 id="title">Preparing recorder...</h1>
 
-    <div class="header">
-      <h1>VSTEP Speaking Recorder</h1>
-      <p>Hệ thống ghi âm bài thi Speaking</p>
-    </div>
-
-    <div style="text-align:center">
-      <span class="part" id="partLabel">Đang kết nối...</span>
-    </div>
-
-    <div class="question" id="question">
-      Đang chờ thông tin từ hệ thống bài thi VSTEP...
-    </div>
-
-    <div class="timer-box">
-      <div class="timer" id="timer">--:--</div>
-      <div class="timer-label" id="timerLabel">
-        Thời gian sẽ hiển thị tại đây
-      </div>
-    </div>
-
-    <div class="status" id="status">
-      Đang kết nối với trang bài thi. Vui lòng chờ...
-    </div>
-
-    <div class="controls">
-      <button class="start-btn" id="startBtn" disabled>
-        Bắt đầu ghi âm
-      </button>
-
-      <button class="stop-btn" id="stopBtn" disabled>
-        Dừng ghi âm
-      </button>
-    </div>
-
-    <div class="note">
-      Hãy kiểm tra microphone trước khi bắt đầu.
-      Không đóng trang này trong khi đang ghi âm.
-    </div>
-
+  <div id="questionArea" class="question">
+    Please wait while the exam question is loading.
   </div>
 
-  <script>
-    const RECORDER_ORIGIN = "https://duynguyen76201-cloud.github.io";
+  <div id="timerLabel">Status</div>
+  <div id="timer" class="timer">--:--</div>
 
-    let examConfig = null;
-    let mediaStream = null;
-    let mediaRecorder = null;
-    let audioChunks = [];
-    let countdownInterval = null;
-    let recordingStarted = false;
-    let isFinished = false;
+  <div id="status" class="status">
+    Connecting to the examination page...
+  </div>
 
-    const partLabel = document.getElementById("partLabel");
-    const questionBox = document.getElementById("question");
-    const timerDisplay = document.getElementById("timer");
-    const timerLabel = document.getElementById("timerLabel");
-    const statusBox = document.getElementById("status");
-    const startBtn = document.getElementById("startBtn");
-    const stopBtn = document.getElementById("stopBtn");
+  <button id="startButton" disabled>Start recording session</button>
+</div>
 
-    function setStatus(message, type = "") {
-      statusBox.textContent = message;
-      statusBox.className = "status " + type;
+<script>
+"use strict";
+
+let examConfig = null;
+let mediaStream = null;
+let mediaRecorder = null;
+let chunks = [];
+let timerInterval = null;
+let remainingSeconds = 0;
+let initialized = false;
+let finished = false;
+
+const startButton = document.getElementById("startButton");
+const statusBox = document.getElementById("status");
+const timerDisplay = document.getElementById("timer");
+const timerLabel = document.getElementById("timerLabel");
+
+function sendToParent(type, data = {}) {
+  if (!window.opener || window.opener.closed) return;
+
+  window.opener.postMessage({
+    type,
+    ...data
+  }, "*");
+}
+
+function notifyReady() {
+  sendToParent("VSTEP_RECORDER_READY");
+}
+
+// Send READY repeatedly because the main page may not be ready
+// when this page first loads.
+notifyReady();
+const readyInterval = setInterval(() => {
+  if (!initialized) notifyReady();
+  else clearInterval(readyInterval);
+}, 700);
+
+window.addEventListener("message", event => {
+  if (event.source !== window.opener) return;
+
+  const data = event.data || {};
+
+  if (data.type === "VSTEP_RECORDER_INIT") {
+    if (initialized) return;
+
+    initialized = true;
+    examConfig = data.config;
+
+    document.getElementById("partLabel").textContent =
+      examConfig.partLabel || examConfig.part || "VSTEP SPEAKING";
+
+    document.getElementById("title").textContent =
+      examConfig.title || "Speaking examination";
+
+    document.getElementById("questionArea").textContent =
+      examConfig.question || "No question provided.";
+
+    statusBox.textContent =
+      "The exam is ready. Click the button below to allow microphone access and begin.";
+
+    startButton.disabled = false;
+  }
+
+  if (data.type === "VSTEP_UPLOAD_SUCCESS") {
+    statusBox.textContent =
+      "Your recording has been uploaded successfully. You can return to the examination page.";
+    statusBox.className = "status success";
+    startButton.disabled = true;
+  }
+
+  if (data.type === "VSTEP_UPLOAD_FAILED") {
+    statusBox.textContent =
+      "The upload failed. Return to the examination page and use Retry upload.";
+    statusBox.className = "status error";
+  }
+});
+
+function formatTime(seconds) {
+  const min = Math.floor(seconds / 60);
+  const sec = seconds % 60;
+
+  return String(min).padStart(2, "0") + ":" +
+         String(sec).padStart(2, "0");
+}
+
+function updateTimer(label, seconds) {
+  timerLabel.textContent = label;
+  timerDisplay.textContent = formatTime(seconds);
+  timerDisplay.classList.toggle("warning", seconds <= 15);
+
+  sendToParent("VSTEP_TIMER", {
+    label,
+    remaining: seconds
+  });
+}
+
+function runCountdown(seconds, label, callback) {
+  clearInterval(timerInterval);
+
+  remainingSeconds = seconds;
+  updateTimer(label, remainingSeconds);
+
+  timerInterval = setInterval(() => {
+    remainingSeconds--;
+    updateTimer(label, remainingSeconds);
+
+    if (remainingSeconds <= 0) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      callback();
     }
+  }, 1000);
+}
 
-    function formatTime(seconds) {
-      const min = Math.floor(seconds / 60);
-      const sec = seconds % 60;
+function chooseMimeType() {
+  const types = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/mp4",
+    "audio/ogg;codecs=opus"
+  ];
 
-      return String(min).padStart(2, "0") + ":" +
-             String(sec).padStart(2, "0");
-    }
+  for (const type of types) {
+    if (MediaRecorder.isTypeSupported(type)) return type;
+  }
 
-    function updateTimer(seconds) {
-      timerDisplay.textContent = formatTime(seconds);
-    }
+  return "";
+}
 
-    function sendToParent(message) {
-      if (!window.opener || window.opener.closed) {
-        setStatus("Không tìm thấy trang bài thi. Vui lòng quay lại hệ thống.", "error");
-        return false;
-      }
+async function startSession() {
+  if (!examConfig || finished) return;
 
-      window.opener.postMessage(message, "*");
-      return true;
-    }
+  startButton.disabled = true;
 
-    function notifyReady() {
-      sendToParent({
-        type: "VSTEP_RECORDER_READY"
-      });
-    }
-
-    window.addEventListener("message", function(event) {
-      if (event.origin !== RECORDER_ORIGIN) {
-        return;
-      }
-
-      if (event.source !== window.opener) {
-        return;
-      }
-
-      const data = event.data;
-
-      if (!data || data.type !== "VSTEP_RECORDER_INIT") {
-        return;
-      }
-
-      examConfig = data.config || {};
-
-      partLabel.textContent = examConfig.partLabel || examConfig.part || "Speaking";
-
-      questionBox.textContent =
-        examConfig.question || "Vui lòng xem đề bài trong hệ thống VSTEP.";
-
-      timerDisplay.textContent = formatTime(
-        Number(examConfig.prepSeconds || 0)
+  try {
+    if (!navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia) {
+      throw new Error(
+        "This browser does not support microphone access. Please use Chrome or Safari."
       );
+    }
 
-      timerLabel.textContent = "Thời gian chuẩn bị";
+    statusBox.textContent = "Requesting microphone permission...";
 
-      startBtn.disabled = false;
-
-      setStatus(
-        "Đã kết nối thành công. Nhấn Bắt đầu ghi âm khi bạn sẵn sàng."
-      );
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      }
     });
 
-    async function startRecording() {
-      if (!examConfig || recordingStarted || isFinished) {
-        return;
-      }
+    statusBox.textContent = "Microphone connected successfully.";
 
-      startBtn.disabled = true;
-
-      try {
-        setStatus("Đang yêu cầu quyền truy cập microphone...");
-
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-          }
-        });
-
-        const mimeTypes = [
-          "audio/webm;codecs=opus",
-          "audio/webm",
-          "audio/mp4"
-        ];
-
-        let selectedMime = "";
-
-        for (const type of mimeTypes) {
-          if (MediaRecorder.isTypeSupported(type)) {
-            selectedMime = type;
-            break;
-          }
-        }
-
-        mediaRecorder = selectedMime
-          ? new MediaRecorder(mediaStream, { mimeType: selectedMime })
-          : new MediaRecorder(mediaStream);
-
-        audioChunks = [];
-
-        mediaRecorder.ondataavailable = function(event) {
-          if (event.data && event.data.size > 0) {
-            audioChunks.push(event.data);
-          }
-        };
-
-        mediaRecorder.onstop = handleRecordingComplete;
-
-        setStatus("Đã cấp quyền microphone. Bắt đầu thời gian chuẩn bị.");
-
-        const prepSeconds = Math.max(
-          0,
-          Number(examConfig.prepSeconds || 0)
-        );
-
-        const speakSeconds = Math.max(
-          1,
-          Number(examConfig.speakSeconds || 60)
-        );
-
-        if (prepSeconds > 0) {
-          timerLabel.textContent = "Thời gian chuẩn bị";
-          runCountdown(prepSeconds, function() {
-            beginSpeaking(speakSeconds);
-          });
-        } else {
-          beginSpeaking(speakSeconds);
-        }
-
-      } catch (error) {
-        console.error(error);
-
-        let message = "Không thể truy cập microphone.";
-
-        if (error.name === "NotAllowedError" ||
-            error.name === "PermissionDeniedError") {
-          message =
-            "Microphone chưa được cấp quyền. Hãy kiểm tra quyền microphone của Chrome và thử lại.";
-        } else if (error.name === "NotFoundError") {
-          message = "Không tìm thấy microphone trên thiết bị.";
-        }
-
-        setStatus(message, "error");
-        startBtn.disabled = false;
-      }
-    }
-
-    function runCountdown(seconds, callback) {
-      let remaining = seconds;
-
-      updateTimer(remaining);
-
-      countdownInterval = setInterval(function() {
-        remaining--;
-        updateTimer(Math.max(remaining, 0));
-
-        if (remaining <= 0) {
-          clearInterval(countdownInterval);
-          countdownInterval = null;
-          callback();
-        }
-      }, 1000);
-    }
-
-    function beginSpeaking(seconds) {
-      if (isFinished) return;
-
-      timerLabel.textContent = "Thời gian trả lời";
-
-      try {
-        mediaRecorder.start(1000);
-        recordingStarted = true;
-
-        stopBtn.disabled = false;
-
-        setStatus("Đang ghi âm. Hãy bắt đầu trả lời.", "recording");
-
-        runCountdown(seconds, function() {
-          stopRecording();
-        });
-
-      } catch (error) {
-        console.error(error);
-        setStatus("Không thể bắt đầu ghi âm: " + error.message, "error");
-        stopRecording();
-      }
-    }
-
-    function stopRecording() {
-      if (countdownInterval) {
-        clearInterval(countdownInterval);
-        countdownInterval = null;
-      }
-
-      if (mediaRecorder &&
-          mediaRecorder.state !== "inactive") {
-        mediaRecorder.stop();
-      } else {
-        finishMicrophone();
-      }
-
-      stopBtn.disabled = true;
-      timerLabel.textContent = "Đã kết thúc";
-    }
-
-    function handleRecordingComplete() {
-      const mimeType =
-        mediaRecorder.mimeType || "audio/webm";
-
-      const audioBlob = new Blob(audioChunks, {
-        type: mimeType
-      });
-
-      finishMicrophone();
-
-      if (!audioBlob.size) {
-        setStatus("Không thu được dữ liệu âm thanh. Vui lòng thử lại.", "error");
-        startBtn.disabled = false;
-        return;
-      }
-
-      if (audioBlob.size > 6 * 1024 * 1024) {
-        setStatus(
-          "File ghi âm vượt quá giới hạn 6 MB. Vui lòng thử lại với thời lượng ngắn hơn.",
-          "error"
-        );
-        startBtn.disabled = false;
-        return;
-      }
-
-      setStatus("Đang gửi bản ghi âm về hệ thống bài thi...", "");
-
-      const sent = sendToParent({
-        type: "VSTEP_AUDIO_READY",
-        part: examConfig.part,
-        mimeType: mimeType,
-        blob: audioBlob
-      });
-
-      if (sent) {
-        isFinished = true;
-        setStatus("Đã gửi bản ghi âm. Bạn có thể quay lại tab bài thi.", "success");
-        timerDisplay.textContent = "✓";
-      }
-    }
-
-    function finishMicrophone() {
-      if (mediaStream) {
-        mediaStream.getTracks().forEach(function(track) {
-          track.stop();
-        });
-
-        mediaStream = null;
-      }
-    }
-
-    startBtn.addEventListener("click", startRecording);
-
-    stopBtn.addEventListener("click", stopRecording);
-
-    window.addEventListener("beforeunload", function() {
-      if (countdownInterval) {
-        clearInterval(countdownInterval);
-      }
-
-      finishMicrophone();
-    });
-
-    if (!window.opener) {
-      setStatus(
-        "Trang này cần được mở từ hệ thống bài thi VSTEP. Vui lòng quay lại trang bài thi.",
-        "error"
+    if (Number(examConfig.prepSeconds) > 0) {
+      runCountdown(
+        Number(examConfig.prepSeconds),
+        "Preparation time",
+        startRecording
       );
     } else {
-      notifyReady();
-      setStatus("Đang chờ kết nối với hệ thống bài thi...");
+      startRecording();
     }
-  </script>
+
+  } catch (err) {
+    statusBox.textContent =
+      "Cannot access microphone: " + err.message;
+    statusBox.className = "status error";
+    startButton.disabled = false;
+  }
+}
+
+function startRecording() {
+  try {
+    chunks = [];
+
+    const mimeType = chooseMimeType();
+
+    mediaRecorder = mimeType
+      ? new MediaRecorder(mediaStream, { mimeType })
+      : new MediaRecorder(mediaStream);
+
+    mediaRecorder.ondataavailable = event => {
+      if (event.data && event.data.size > 0) {
+        chunks.push(event.data);
+      }
+    };
+
+    mediaRecorder.onerror = event => {
+      statusBox.textContent =
+        "Recording error: " +
+        (event.error ? event.error.message : "Unknown error");
+      statusBox.className = "status error";
+    };
+
+    mediaRecorder.onstop = sendRecording;
+
+    mediaRecorder.start(1000);
+
+    statusBox.textContent =
+      "Recording is in progress. Speak clearly and answer the questions.";
+    statusBox.className = "status";
+
+    startButton.textContent = "Recording...";
+    startButton.disabled = true;
+
+    runCountdown(
+      Number(examConfig.speakSeconds),
+      "Speaking time",
+      stopRecording
+    );
+
+  } catch (err) {
+    statusBox.textContent =
+      "Cannot start recording: " + err.message;
+    statusBox.className = "status error";
+    startButton.disabled = false;
+  }
+}
+
+function stopRecording() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  }
+}
+
+function sendRecording() {
+  if (finished) return;
+
+  finished = true;
+
+  const type = mediaRecorder && mediaRecorder.mimeType
+    ? mediaRecorder.mimeType
+    : "audio/webm";
+
+  const blob = new Blob(chunks, { type });
+
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop());
+    mediaStream = null;
+  }
+
+  if (blob.size < 1000) {
+    statusBox.textContent =
+      "The recording is too short or empty. Please return to the exam page.";
+    statusBox.className = "status error";
+    return;
+  }
+
+  if (blob.size > 6 * 1024 * 1024) {
+    statusBox.textContent =
+      "The recording exceeds the 6 MB limit. Please contact the test administrator.";
+    statusBox.className = "status error";
+    return;
+  }
+
+  statusBox.textContent =
+    "Recording completed. Sending it to the examination page...";
+
+  sendToParent("VSTEP_AUDIO_READY", {
+    part: examConfig.part,
+    mimeType: type,
+    blob
+  });
+
+  timerLabel.textContent = "Recording completed";
+  timerDisplay.textContent = "DONE";
+  startButton.textContent = "Recording sent";
+}
+
+startButton.addEventListener("click", startSession);
+
+window.addEventListener("beforeunload", () => {
+  clearInterval(timerInterval);
+
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop());
+  }
+});
+</script>
 </body>
 </html>
