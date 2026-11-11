@@ -5,133 +5,234 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VSTEP Speaking Recorder</title>
+
 <style>
-  * { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 24px;
+  font-family: Arial, sans-serif;
+  background: #f3f6fb;
+  color: #1f2937;
+}
+
+.container {
+  max-width: 760px;
+  margin: 25px auto;
+  background: white;
+  padding: 26px;
+  border-radius: 16px;
+  box-shadow: 0 5px 25px rgba(0,0,0,.06);
+}
+
+h1 {
+  color: #17365d;
+  font-size: 25px;
+}
+
+.label {
+  color: #2563eb;
+  font-weight: bold;
+}
+
+.question {
+  background: #f7f9fc;
+  border-left: 4px solid #2563eb;
+  padding: 15px;
+  margin: 12px 0;
+  border-radius: 7px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.timer {
+  font-size: 46px;
+  font-weight: bold;
+  color: #17365d;
+  margin: 18px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.warning {
+  color: #dc2626;
+}
+
+.status {
+  padding: 14px;
+  border-radius: 9px;
+  background: #f1f5f9;
+  margin: 18px 0;
+  line-height: 1.5;
+}
+
+button {
+  border: 0;
+  border-radius: 9px;
+  padding: 14px 20px;
+  background: #2563eb;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.error {
+  color: #dc2626;
+}
+
+.success {
+  color: #16845b;
+}
+
+@media(max-width: 600px) {
   body {
-    margin: 0;
-    padding: 24px;
-    font-family: Arial, sans-serif;
-    background: #f3f6fb;
-    color: #1f2937;
+    padding: 10px;
   }
+
   .container {
-    max-width: 760px;
-    margin: 25px auto;
-    background: white;
-    padding: 26px;
-    border-radius: 16px;
-    box-shadow: 0 5px 25px rgba(0,0,0,.06);
+    padding: 18px;
   }
-  h1 { color: #17365d; font-size: 25px; }
-  .label { color: #2563eb; font-weight: bold; }
-  .question {
-    background: #f7f9fc;
-    border-left: 4px solid #2563eb;
-    padding: 15px;
-    margin: 12px 0;
-    border-radius: 7px;
-    line-height: 1.6;
-    white-space: pre-wrap;
-  }
+
   .timer {
-    font-size: 46px;
-    font-weight: bold;
-    color: #17365d;
-    margin: 18px 0;
-    font-variant-numeric: tabular-nums;
+    font-size: 40px;
   }
-  .warning { color: #dc2626; }
-  .status {
-    padding: 14px;
-    border-radius: 9px;
-    background: #f1f5f9;
-    margin: 18px 0;
-    line-height: 1.5;
-  }
-  button {
-    border: 0;
-    border-radius: 9px;
-    padding: 14px 20px;
-    background: #2563eb;
-    color: white;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  button:disabled { opacity: .5; cursor: not-allowed; }
-  .hidden { display: none; }
-  .error { color: #dc2626; }
-  .success { color: #16845b; }
-  @media(max-width: 600px) {
-    body { padding: 10px; }
-    .container { padding: 18px; }
-  }
+}
 </style>
 </head>
+
 <body>
+
 <div class="container">
-  <div class="label" id="partLabel">VSTEP SPEAKING</div>
-  <h1 id="title">Preparing recorder...</h1>
+
+  <div class="label" id="partLabel">
+    VSTEP SPEAKING
+  </div>
+
+  <h1 id="title">
+    Preparing recorder...
+  </h1>
 
   <div id="questionArea" class="question">
     Please wait while the exam question is loading.
   </div>
 
   <div id="timerLabel">Status</div>
+
   <div id="timer" class="timer">--:--</div>
 
   <div id="status" class="status">
     Connecting to the examination page...
   </div>
 
-  <button id="startButton" disabled>Start recording session</button>
+  <button id="startButton" disabled>
+    Start recording session
+  </button>
+
 </div>
 
 <script>
 "use strict";
 
+/* =====================================
+   GLOBAL VARIABLES
+===================================== */
+
 let examConfig = null;
+
 let mediaStream = null;
 let mediaRecorder = null;
 let chunks = [];
+
 let timerInterval = null;
 let remainingSeconds = 0;
+
 let initialized = false;
-let finished = false;
+let recordingStarted = false;
+let recordingFinished = false;
+let uploadCompleted = false;
 
 const startButton = document.getElementById("startButton");
 const statusBox = document.getElementById("status");
 const timerDisplay = document.getElementById("timer");
 const timerLabel = document.getElementById("timerLabel");
 
+
+/* =====================================
+   COMMUNICATION WITH MAIN PAGE
+===================================== */
+
 function sendToParent(type, data = {}) {
-  if (!window.opener || window.opener.closed) return;
+
+  if (!window.opener || window.opener.closed) {
+    return;
+  }
 
   window.opener.postMessage({
-    type,
+    type: type,
     ...data
   }, "*");
 }
 
+
 function notifyReady() {
-  sendToParent("VSTEP_RECORDER_READY");
+
+  if (!initialized) {
+    sendToParent("VSTEP_RECORDER_READY");
+  }
+
 }
 
-// Send READY repeatedly because the main page may not be ready
-// when this page first loads.
+
+// Keep sending READY until the main page sends INIT.
+
 notifyReady();
+
 const readyInterval = setInterval(() => {
-  if (!initialized) notifyReady();
-  else clearInterval(readyInterval);
+
+  if (initialized) {
+    clearInterval(readyInterval);
+    return;
+  }
+
+  notifyReady();
+
 }, 700);
 
+
+/* =====================================
+   RECEIVE MESSAGES FROM MAIN PAGE
+===================================== */
+
 window.addEventListener("message", event => {
-  if (event.source !== window.opener) return;
+
+  // Only accept messages from the window that opened this page.
+  if (event.source !== window.opener) {
+    return;
+  }
 
   const data = event.data || {};
 
+
+  /* Receive exam configuration */
+
   if (data.type === "VSTEP_RECORDER_INIT") {
-    if (initialized) return;
+
+    if (initialized) {
+      return;
+    }
+
+    if (!data.config) {
+      showError("The examination configuration is missing.");
+      return;
+    }
 
     initialized = true;
     examConfig = data.config;
@@ -148,61 +249,147 @@ window.addEventListener("message", event => {
     statusBox.textContent =
       "The exam is ready. Click the button below to allow microphone access and begin.";
 
+    statusBox.className = "status";
+
     startButton.disabled = false;
   }
 
+
+  /* Upload completed successfully */
+
   if (data.type === "VSTEP_UPLOAD_SUCCESS") {
+
+    uploadCompleted = true;
+
     statusBox.textContent =
       "Your recording has been uploaded successfully. You can return to the examination page.";
+
     statusBox.className = "status success";
+
+    startButton.textContent = "Upload successful";
     startButton.disabled = true;
   }
 
+
+  /* Upload failed */
+
   if (data.type === "VSTEP_UPLOAD_FAILED") {
+
     statusBox.textContent =
-      "The upload failed. Return to the examination page and use Retry upload.";
+      "The upload failed. Please return to the examination page and try uploading again.";
+
     statusBox.className = "status error";
   }
+
 });
 
+
+/* =====================================
+   STATUS HELPERS
+===================================== */
+
+function showError(message) {
+
+  statusBox.textContent = message;
+  statusBox.className = "status error";
+
+}
+
+
+function showSuccess(message) {
+
+  statusBox.textContent = message;
+  statusBox.className = "status success";
+
+}
+
+
+function stopMicrophone() {
+
+  if (mediaStream) {
+
+    mediaStream.getTracks().forEach(track => {
+      track.stop();
+    });
+
+    mediaStream = null;
+  }
+
+}
+
+
+/* =====================================
+   TIMER
+===================================== */
+
 function formatTime(seconds) {
+
   const min = Math.floor(seconds / 60);
   const sec = seconds % 60;
 
   return String(min).padStart(2, "0") + ":" +
          String(sec).padStart(2, "0");
+
 }
+
 
 function updateTimer(label, seconds) {
+
   timerLabel.textContent = label;
+
   timerDisplay.textContent = formatTime(seconds);
-  timerDisplay.classList.toggle("warning", seconds <= 15);
+
+  timerDisplay.classList.toggle(
+    "warning",
+    seconds <= 15
+  );
 
   sendToParent("VSTEP_TIMER", {
-    label,
+    label: label,
     remaining: seconds
   });
+
 }
 
+
 function runCountdown(seconds, label, callback) {
+
   clearInterval(timerInterval);
 
-  remainingSeconds = seconds;
+  remainingSeconds = Math.max(0, Number(seconds) || 0);
+
   updateTimer(label, remainingSeconds);
 
+  if (remainingSeconds <= 0) {
+    callback();
+    return;
+  }
+
   timerInterval = setInterval(() => {
+
     remainingSeconds--;
+
     updateTimer(label, remainingSeconds);
 
     if (remainingSeconds <= 0) {
+
       clearInterval(timerInterval);
       timerInterval = null;
+
       callback();
     }
+
   }, 1000);
+
 }
 
+
+/* =====================================
+   AUDIO FORMAT
+===================================== */
+
 function chooseMimeType() {
+
   const types = [
     "audio/webm;codecs=opus",
     "audio/webm",
@@ -210,166 +397,330 @@ function chooseMimeType() {
     "audio/ogg;codecs=opus"
   ];
 
+  if (!window.MediaRecorder) {
+    return "";
+  }
+
   for (const type of types) {
-    if (MediaRecorder.isTypeSupported(type)) return type;
+
+    if (MediaRecorder.isTypeSupported(type)) {
+      return type;
+    }
+
   }
 
   return "";
+
 }
 
+
+/* =====================================
+   START EXAM SESSION
+===================================== */
+
 async function startSession() {
-  if (!examConfig || finished) return;
+
+  if (!examConfig || recordingStarted || uploadCompleted) {
+    return;
+  }
 
   startButton.disabled = true;
 
   try {
-    if (!navigator.mediaDevices ||
-        !navigator.mediaDevices.getUserMedia) {
+
+    if (
+      !navigator.mediaDevices ||
+      !navigator.mediaDevices.getUserMedia
+    ) {
+
       throw new Error(
         "This browser does not support microphone access. Please use Chrome or Safari."
       );
+
     }
 
-    statusBox.textContent = "Requesting microphone permission...";
+    if (!window.MediaRecorder) {
+
+      throw new Error(
+        "MediaRecorder is not supported by this browser."
+      );
+
+    }
+
+    statusBox.textContent =
+      "Requesting microphone permission...";
+
+    statusBox.className = "status";
 
     mediaStream = await navigator.mediaDevices.getUserMedia({
+
       audio: {
         echoCancellation: true,
         noiseSuppression: true,
         autoGainControl: true
       }
+
     });
 
-    statusBox.textContent = "Microphone connected successfully.";
+    showSuccess("Microphone connected successfully.");
 
-    if (Number(examConfig.prepSeconds) > 0) {
+    const prepSeconds = Math.max(
+      0,
+      Number(examConfig.prepSeconds) || 0
+    );
+
+    if (prepSeconds > 0) {
+
       runCountdown(
-        Number(examConfig.prepSeconds),
+        prepSeconds,
         "Preparation time",
         startRecording
       );
+
     } else {
+
       startRecording();
+
     }
 
   } catch (err) {
-    statusBox.textContent =
-      "Cannot access microphone: " + err.message;
-    statusBox.className = "status error";
+
+    stopMicrophone();
+
+    showError(
+      "Cannot access microphone: " +
+      (err.message || "Unknown error")
+    );
+
     startButton.disabled = false;
   }
+
 }
 
+
+/* =====================================
+   START RECORDING
+===================================== */
+
 function startRecording() {
+
+  if (!mediaStream || recordingStarted) {
+    return;
+  }
+
   try {
+
     chunks = [];
 
     const mimeType = chooseMimeType();
 
     mediaRecorder = mimeType
-      ? new MediaRecorder(mediaStream, { mimeType })
+      ? new MediaRecorder(mediaStream, { mimeType: mimeType })
       : new MediaRecorder(mediaStream);
 
+
     mediaRecorder.ondataavailable = event => {
+
       if (event.data && event.data.size > 0) {
         chunks.push(event.data);
       }
+
     };
 
+
     mediaRecorder.onerror = event => {
-      statusBox.textContent =
-        "Recording error: " +
-        (event.error ? event.error.message : "Unknown error");
-      statusBox.className = "status error";
+
+      const message =
+        event.error && event.error.message
+          ? event.error.message
+          : "Unknown recording error";
+
+      showError("Recording error: " + message);
+
+      clearInterval(timerInterval);
+      timerInterval = null;
+
+      stopMicrophone();
+
     };
+
 
     mediaRecorder.onstop = sendRecording;
 
+
     mediaRecorder.start(1000);
+
+    recordingStarted = true;
+
+    sendToParent("VSTEP_RECORDING_STARTED", {
+      part: examConfig.part
+    });
 
     statusBox.textContent =
       "Recording is in progress. Speak clearly and answer the questions.";
+
     statusBox.className = "status";
 
     startButton.textContent = "Recording...";
     startButton.disabled = true;
 
+    const speakSeconds = Math.max(
+      1,
+      Number(examConfig.speakSeconds) || 1
+    );
+
     runCountdown(
-      Number(examConfig.speakSeconds),
+      speakSeconds,
       "Speaking time",
       stopRecording
     );
 
   } catch (err) {
-    statusBox.textContent =
-      "Cannot start recording: " + err.message;
-    statusBox.className = "status error";
+
+    clearInterval(timerInterval);
+    timerInterval = null;
+
+    stopMicrophone();
+
+    showError(
+      "Cannot start recording: " +
+      (err.message || "Unknown error")
+    );
+
+    startButton.textContent = "Try again";
     startButton.disabled = false;
+
+    recordingStarted = false;
   }
+
 }
 
+
+/* =====================================
+   STOP RECORDING
+===================================== */
+
 function stopRecording() {
+
   clearInterval(timerInterval);
   timerInterval = null;
 
-  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+  if (
+    mediaRecorder &&
+    mediaRecorder.state !== "inactive"
+  ) {
+
     mediaRecorder.stop();
+
   }
+
 }
 
-function sendRecording() {
-  if (finished) return;
 
-  finished = true;
+/* =====================================
+   SEND AUDIO TO MAIN PAGE
+===================================== */
+
+function sendRecording() {
+
+  if (recordingFinished) {
+    return;
+  }
+
+  recordingFinished = true;
 
   const type = mediaRecorder && mediaRecorder.mimeType
     ? mediaRecorder.mimeType
     : "audio/webm";
 
-  const blob = new Blob(chunks, { type });
+  const blob = new Blob(chunks, {
+    type: type
+  });
 
-  if (mediaStream) {
-    mediaStream.getTracks().forEach(track => track.stop());
-    mediaStream = null;
-  }
+  stopMicrophone();
 
   if (blob.size < 1000) {
-    statusBox.textContent =
-      "The recording is too short or empty. Please return to the exam page.";
-    statusBox.className = "status error";
+
+    showError(
+      "The recording is too short or empty. Please contact the test administrator."
+    );
+
+    timerLabel.textContent = "Recording failed";
+    timerDisplay.textContent = "--:--";
+
+    sendToParent("VSTEP_RECORDER_ERROR", {
+      message: "The recording is too short or empty.",
+      part: examConfig.part
+    });
+
     return;
   }
 
+
   if (blob.size > 6 * 1024 * 1024) {
-    statusBox.textContent =
-      "The recording exceeds the 6 MB limit. Please contact the test administrator.";
-    statusBox.className = "status error";
+
+    showError(
+      "The recording exceeds the 6 MB limit. Please contact the test administrator."
+    );
+
+    timerLabel.textContent = "File too large";
+    timerDisplay.textContent = "--:--";
+
+    sendToParent("VSTEP_RECORDER_ERROR", {
+      message: "The recording exceeds the 6 MB limit.",
+      part: examConfig.part
+    });
+
     return;
   }
+
 
   statusBox.textContent =
     "Recording completed. Sending it to the examination page...";
 
-  sendToParent("VSTEP_AUDIO_READY", {
-    part: examConfig.part,
-    mimeType: type,
-    blob
-  });
+  statusBox.className = "status";
 
   timerLabel.textContent = "Recording completed";
   timerDisplay.textContent = "DONE";
+
   startButton.textContent = "Recording sent";
+  startButton.disabled = true;
+
+
+  sendToParent("VSTEP_AUDIO_READY", {
+
+    part: examConfig.part,
+
+    mimeType: type,
+
+    blob: blob
+
+  });
+
 }
+
+
+/* =====================================
+   BUTTON EVENT
+===================================== */
 
 startButton.addEventListener("click", startSession);
 
-window.addEventListener("beforeunload", () => {
-  clearInterval(timerInterval);
 
-  if (mediaStream) {
-    mediaStream.getTracks().forEach(track => track.stop());
-  }
+/* =====================================
+   PAGE CLEANUP
+===================================== */
+
+window.addEventListener("beforeunload", () => {
+
+  clearInterval(timerInterval);
+  clearInterval(readyInterval);
+
+  stopMicrophone();
+
 });
+
 </script>
+
 </body>
 </html>
