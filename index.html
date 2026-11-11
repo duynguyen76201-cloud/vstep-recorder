@@ -1,0 +1,526 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VSTEP Speaking Recorder</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f3f5f9;
+      color: #202938;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 650px;
+      background: white;
+      border-radius: 18px;
+      padding: 32px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.08);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .header h1 {
+      margin: 0 0 8px;
+      font-size: 25px;
+      color: #243b64;
+    }
+
+    .header p {
+      margin: 0;
+      color: #788397;
+      font-size: 14px;
+    }
+
+    .part {
+      display: inline-block;
+      background: #eaf1ff;
+      color: #2457a7;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      margin-bottom: 18px;
+    }
+
+    .question {
+      background: #f7f9fc;
+      border: 1px solid #e5eaf2;
+      padding: 20px;
+      border-radius: 12px;
+      line-height: 1.7;
+      min-height: 90px;
+      margin-bottom: 24px;
+      white-space: pre-wrap;
+    }
+
+    .timer-box {
+      text-align: center;
+      margin: 25px 0;
+    }
+
+    .timer {
+      font-size: 58px;
+      font-weight: bold;
+      color: #243b64;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timer-label {
+      color: #788397;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+
+    .status {
+      text-align: center;
+      padding: 12px;
+      border-radius: 9px;
+      background: #f0f3f8;
+      color: #536176;
+      font-size: 14px;
+      margin: 20px 0;
+      line-height: 1.5;
+    }
+
+    .status.recording {
+      background: #fff0f0;
+      color: #d93636;
+    }
+
+    .status.success {
+      background: #eaf8ef;
+      color: #20834a;
+    }
+
+    .status.error {
+      background: #fff0f0;
+      color: #c62828;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 14px 25px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: .2s;
+    }
+
+    button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    .start-btn {
+      background: #2457a7;
+      color: white;
+    }
+
+    .start-btn:hover:not(:disabled) {
+      background: #194582;
+    }
+
+    .stop-btn {
+      background: #d93636;
+      color: white;
+    }
+
+    .note {
+      margin-top: 25px;
+      color: #8993a3;
+      font-size: 12px;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    @media (max-width: 500px) {
+      body {
+        padding: 12px;
+      }
+
+      .container {
+        padding: 22px 16px;
+      }
+
+      .timer {
+        font-size: 48px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <div class="header">
+      <h1>VSTEP Speaking Recorder</h1>
+      <p>Hệ thống ghi âm bài thi Speaking</p>
+    </div>
+
+    <div style="text-align:center">
+      <span class="part" id="partLabel">Đang kết nối...</span>
+    </div>
+
+    <div class="question" id="question">
+      Đang chờ thông tin từ hệ thống bài thi VSTEP...
+    </div>
+
+    <div class="timer-box">
+      <div class="timer" id="timer">--:--</div>
+      <div class="timer-label" id="timerLabel">
+        Thời gian sẽ hiển thị tại đây
+      </div>
+    </div>
+
+    <div class="status" id="status">
+      Đang kết nối với trang bài thi. Vui lòng chờ...
+    </div>
+
+    <div class="controls">
+      <button class="start-btn" id="startBtn" disabled>
+        Bắt đầu ghi âm
+      </button>
+
+      <button class="stop-btn" id="stopBtn" disabled>
+        Dừng ghi âm
+      </button>
+    </div>
+
+    <div class="note">
+      Hãy kiểm tra microphone trước khi bắt đầu.
+      Không đóng trang này trong khi đang ghi âm.
+    </div>
+
+  </div>
+
+  <script>
+    const RECORDER_ORIGIN = "https://duynguyen76201-cloud.github.io";
+
+    let examConfig = null;
+    let mediaStream = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let countdownInterval = null;
+    let recordingStarted = false;
+    let isFinished = false;
+
+    const partLabel = document.getElementById("partLabel");
+    const questionBox = document.getElementById("question");
+    const timerDisplay = document.getElementById("timer");
+    const timerLabel = document.getElementById("timerLabel");
+    const statusBox = document.getElementById("status");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+
+    function setStatus(message, type = "") {
+      statusBox.textContent = message;
+      statusBox.className = "status " + type;
+    }
+
+    function formatTime(seconds) {
+      const min = Math.floor(seconds / 60);
+      const sec = seconds % 60;
+
+      return String(min).padStart(2, "0") + ":" +
+             String(sec).padStart(2, "0");
+    }
+
+    function updateTimer(seconds) {
+      timerDisplay.textContent = formatTime(seconds);
+    }
+
+    function sendToParent(message) {
+      if (!window.opener || window.opener.closed) {
+        setStatus("Không tìm thấy trang bài thi. Vui lòng quay lại hệ thống.", "error");
+        return false;
+      }
+
+      window.opener.postMessage(message, "*");
+      return true;
+    }
+
+    function notifyReady() {
+      sendToParent({
+        type: "VSTEP_RECORDER_READY"
+      });
+    }
+
+    window.addEventListener("message", function(event) {
+      if (event.origin !== RECORDER_ORIGIN) {
+        return;
+      }
+
+      if (event.source !== window.opener) {
+        return;
+      }
+
+      const data = event.data;
+
+      if (!data || data.type !== "VSTEP_RECORDER_INIT") {
+        return;
+      }
+
+      examConfig = data.config || {};
+
+      partLabel.textContent = examConfig.partLabel || examConfig.part || "Speaking";
+
+      questionBox.textContent =
+        examConfig.question || "Vui lòng xem đề bài trong hệ thống VSTEP.";
+
+      timerDisplay.textContent = formatTime(
+        Number(examConfig.prepSeconds || 0)
+      );
+
+      timerLabel.textContent = "Thời gian chuẩn bị";
+
+      startBtn.disabled = false;
+
+      setStatus(
+        "Đã kết nối thành công. Nhấn Bắt đầu ghi âm khi bạn sẵn sàng."
+      );
+    });
+
+    async function startRecording() {
+      if (!examConfig || recordingStarted || isFinished) {
+        return;
+      }
+
+      startBtn.disabled = true;
+
+      try {
+        setStatus("Đang yêu cầu quyền truy cập microphone...");
+
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+
+        const mimeTypes = [
+          "audio/webm;codecs=opus",
+          "audio/webm",
+          "audio/mp4"
+        ];
+
+        let selectedMime = "";
+
+        for (const type of mimeTypes) {
+          if (MediaRecorder.isTypeSupported(type)) {
+            selectedMime = type;
+            break;
+          }
+        }
+
+        mediaRecorder = selectedMime
+          ? new MediaRecorder(mediaStream, { mimeType: selectedMime })
+          : new MediaRecorder(mediaStream);
+
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = function(event) {
+          if (event.data && event.data.size > 0) {
+            audioChunks.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = handleRecordingComplete;
+
+        setStatus("Đã cấp quyền microphone. Bắt đầu thời gian chuẩn bị.");
+
+        const prepSeconds = Math.max(
+          0,
+          Number(examConfig.prepSeconds || 0)
+        );
+
+        const speakSeconds = Math.max(
+          1,
+          Number(examConfig.speakSeconds || 60)
+        );
+
+        if (prepSeconds > 0) {
+          timerLabel.textContent = "Thời gian chuẩn bị";
+          runCountdown(prepSeconds, function() {
+            beginSpeaking(speakSeconds);
+          });
+        } else {
+          beginSpeaking(speakSeconds);
+        }
+
+      } catch (error) {
+        console.error(error);
+
+        let message = "Không thể truy cập microphone.";
+
+        if (error.name === "NotAllowedError" ||
+            error.name === "PermissionDeniedError") {
+          message =
+            "Microphone chưa được cấp quyền. Hãy kiểm tra quyền microphone của Chrome và thử lại.";
+        } else if (error.name === "NotFoundError") {
+          message = "Không tìm thấy microphone trên thiết bị.";
+        }
+
+        setStatus(message, "error");
+        startBtn.disabled = false;
+      }
+    }
+
+    function runCountdown(seconds, callback) {
+      let remaining = seconds;
+
+      updateTimer(remaining);
+
+      countdownInterval = setInterval(function() {
+        remaining--;
+        updateTimer(Math.max(remaining, 0));
+
+        if (remaining <= 0) {
+          clearInterval(countdownInterval);
+          countdownInterval = null;
+          callback();
+        }
+      }, 1000);
+    }
+
+    function beginSpeaking(seconds) {
+      if (isFinished) return;
+
+      timerLabel.textContent = "Thời gian trả lời";
+
+      try {
+        mediaRecorder.start(1000);
+        recordingStarted = true;
+
+        stopBtn.disabled = false;
+
+        setStatus("Đang ghi âm. Hãy bắt đầu trả lời.", "recording");
+
+        runCountdown(seconds, function() {
+          stopRecording();
+        });
+
+      } catch (error) {
+        console.error(error);
+        setStatus("Không thể bắt đầu ghi âm: " + error.message, "error");
+        stopRecording();
+      }
+    }
+
+    function stopRecording() {
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+      }
+
+      if (mediaRecorder &&
+          mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+      } else {
+        finishMicrophone();
+      }
+
+      stopBtn.disabled = true;
+      timerLabel.textContent = "Đã kết thúc";
+    }
+
+    function handleRecordingComplete() {
+      const mimeType =
+        mediaRecorder.mimeType || "audio/webm";
+
+      const audioBlob = new Blob(audioChunks, {
+        type: mimeType
+      });
+
+      finishMicrophone();
+
+      if (!audioBlob.size) {
+        setStatus("Không thu được dữ liệu âm thanh. Vui lòng thử lại.", "error");
+        startBtn.disabled = false;
+        return;
+      }
+
+      if (audioBlob.size > 6 * 1024 * 1024) {
+        setStatus(
+          "File ghi âm vượt quá giới hạn 6 MB. Vui lòng thử lại với thời lượng ngắn hơn.",
+          "error"
+        );
+        startBtn.disabled = false;
+        return;
+      }
+
+      setStatus("Đang gửi bản ghi âm về hệ thống bài thi...", "");
+
+      const sent = sendToParent({
+        type: "VSTEP_AUDIO_READY",
+        part: examConfig.part,
+        mimeType: mimeType,
+        blob: audioBlob
+      });
+
+      if (sent) {
+        isFinished = true;
+        setStatus("Đã gửi bản ghi âm. Bạn có thể quay lại tab bài thi.", "success");
+        timerDisplay.textContent = "✓";
+      }
+    }
+
+    function finishMicrophone() {
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(function(track) {
+          track.stop();
+        });
+
+        mediaStream = null;
+      }
+    }
+
+    startBtn.addEventListener("click", startRecording);
+
+    stopBtn.addEventListener("click", stopRecording);
+
+    window.addEventListener("beforeunload", function() {
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+      }
+
+      finishMicrophone();
+    });
+
+    if (!window.opener) {
+      setStatus(
+        "Trang này cần được mở từ hệ thống bài thi VSTEP. Vui lòng quay lại trang bài thi.",
+        "error"
+      );
+    } else {
+      notifyReady();
+      setStatus("Đang chờ kết nối với hệ thống bài thi...");
+    }
+  </script>
+</body>
+</html>
